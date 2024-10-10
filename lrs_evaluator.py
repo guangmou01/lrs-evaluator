@@ -48,7 +48,7 @@ def plot_roc_curve(ss_lr, ds_lr, x_range, y_range, show_auc):
     ax.plot([0, 1], [0, 1], linestyle='--', color='black', alpha=0.6)
     if show_auc == "Yes":
         ax.annotate(f'AUC = {auc_value:.4f}',
-                    xy=(0.61, 0.45),  # 你可以根据需要调整这个位置
+                    xy=(0.61, 0.45),
                     fontsize=10,
                     color='black')
     ax.set_xlabel('False Positive Rate (FPR)')
