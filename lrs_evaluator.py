@@ -113,6 +113,9 @@ def cllr(ss_lr, ds_lr):
 st.set_page_config(page_title="LR-based System Evaluator",
                    page_icon="⚖️")
 st.title("⚖️ LR-based System Evaluator")
+st.write("Author: Guangmou"
+         "  \n e-Mail: forensicstats@hotmail.com")
+st.markdown("---")
 
 # Get Input LRs and Other Parameters
 ss_lr_input = st.text_input('LR Values of Positive Pairs',
@@ -259,5 +262,3 @@ if st.button("📈  Generate the Tippett Plot", key="tippett_button"):
         st.download_button("💾  Download the Tippett Plot", buf, "tippett_plot.png", "image/png")
     except Exception as e:
         st.error(f"Error generating tippett plot: {str(e)}")
-
-# streamlit run LR_Evaluator_v1.0.py
