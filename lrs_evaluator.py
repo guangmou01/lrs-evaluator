@@ -253,16 +253,16 @@ if st.button("📈  Generate the Tippett Plot", key="tippett_button"):
     elif line_type_input == 'dash-dot':
         line_type_input = '-.'
     try:
-        fig = tippett_plot(ss_lr_input, ds_lr_input, evi_value_input,
-                           x_range_input_tippett, y_range_input_tippett,
-                           ss_lr_tag_input, ds_lr_tag_input,
-                           line_type_input,
-                           legend_pos_input)
-        st.pyplot(fig)
+        tippett_fig = tippett_plot(ss_lr_input, ds_lr_input, evi_value_input,
+                                   x_range_input_tippett, y_range_input_tippett,
+                                   ss_lr_tag_input, ds_lr_tag_input,
+                                   line_type_input,
+                                   legend_pos_input)
+        st.pyplot(tippett_fig)
 
         # Save the Figure into BytesIO for Downloading
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=600)
+        tippett_fig.savefig(buf, format='png', dpi=600)
         buf.seek(0)
 
         # Download Button
