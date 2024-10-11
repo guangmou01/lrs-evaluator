@@ -10,12 +10,13 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr,
                  ss_lr_tag, ds_lr_tag,
                  line_type,
                  legend_pos):
-    fig_tippett, ax = plt.subplots(figsize=(8, 6))
     ss_lr_sorted = np.sort(np.log10(ss_lr))
     ss_cumulative = np.arange(1, len(ss_lr_sorted) + 1) / len(ss_lr_sorted)
     ds_lr_sorted = np.sort(np.log10(ds_lr))[::-1]
     ds_cumulative = np.arange(1, len(ds_lr_sorted) + 1) / len(ds_lr_sorted)
 
+    fig_tippett, ax = plt.subplots(figsize=(8, 6))
+    # Draw the Tippett Plot
     ax.plot(ds_lr_sorted, ds_cumulative, label=ds_lr_tag, color='blue', linestyle=line_type)
     ax.plot(ss_lr_sorted, ss_cumulative, label=ss_lr_tag, color='red', linestyle=line_type)
     ax.axvline(0, color='black', linestyle='--')
@@ -25,14 +26,14 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr,
     ax.set_xlabel('Log10 Likelihood Ratio')
     ax.set_ylabel('Cumulative Proportion')
     ax.grid(True, alpha=0.4)
-
     if evidence_lr != "None":
         evidence_lr = float(evidence_lr)
-        ax.axvline(np.log10(evidence_lr), color='green', linestyle='-', alpha=0.6)
+        ax.axvline(np.log10(evidence_lr), color='green', linestyle='-', alpha=0.6)  # Draw the Evidence Line
         ax.annotate(f'E = {evidence_lr}',
                     xy=(np.log10(evidence_lr), 0.5),
                     xytext=(np.log10(evidence_lr)+(max(x_range)-min(x_range))/50, 0.5),
                     fontsize=10, ha='left', color='black')
+        # Annotate the Evidence Value
 
     return fig_tippett
 
@@ -40,44 +41,46 @@ def plot_roc_curve(ss_lr, ds_lr, x_range, y_range, show_auc):
     scores = np.concatenate([ss_lr, ds_lr])
     labels = np.concatenate([np.ones_like(ss_lr), np.zeros_like(ds_lr)])
     auc_value = roc_auc_score(labels, scores)
-
     fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=1)
 
     fig_roc, ax = plt.subplots(figsize=(8, 8))
+    # Draw the ROC Curve
     ax.plot(fpr, tpr, label='ROC Curve', color='red')
     ax.plot([0, 1], [0, 1], linestyle='--', color='black', alpha=0.6)
-    if show_auc == "Yes":
-        ax.annotate(f'AUC = {auc_value:.4f}',
-                    xy=(0.61, 0.45),
-                    fontsize=10,
-                    color='black')
     ax.set_xlabel('False Positive Rate (FPR)')
     ax.set_ylabel('True Positive Rate (TPR)')
     ax.legend(loc='lower right')
     ax.set_xlim(x_range)
     ax.set_ylim(y_range)
     ax.grid(True, alpha=0.4)
+    if show_auc == "Yes":
+        ax.annotate(f'AUC = {auc_value:.4f}',
+                    xy=(0.61, 0.45),
+                    fontsize=10,
+                    color='black')
+        # Annotate the AUC Value
 
     return fig_roc
 
 def plot_det_curve(ss_lr, ds_lr, eer_value, x_range, y_range, show_eer_point):
     scores = np.concatenate([ss_lr, ds_lr])
     labels = np.concatenate([np.ones_like(ss_lr), np.zeros_like(ds_lr)])
-
     fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=1)
     fnr = 1 - tpr
 
     fig_det, ax = plt.subplots(figsize=(8, 8))
+    # Draw the DET Curve
     ax.plot(fpr, fnr, label='DET Curve', color='blue')
     ax.plot([0, 1], [0, 1], linestyle='--', color='black', alpha=0.6)
-    if show_eer_point == "Yes":
-        ax.scatter(eer_value, eer_value, s=20, color='red', label="EER Point", marker='o', zorder=8)
     ax.set_xlabel('False Positive Rate (FPR)')
     ax.set_ylabel('False Negative Rate (FNR)')
     ax.legend(loc='upper right')
     ax.set_xlim(x_range)
     ax.set_ylim(y_range)
     ax.grid(True, alpha=0.4)
+    if show_eer_point == "Yes":
+        ax.scatter(eer_value, eer_value, s=20, color='red', label="EER Point", marker='o', zorder=8)
+        # Show the ERR Point
 
     return fig_det
 
@@ -91,7 +94,6 @@ def auc(ss_lr, ds_lr):
 def eer(ss_lr, ds_lr):
     scores = np.concatenate([ss_lr, ds_lr])
     labels = np.concatenate([np.ones_like(ss_lr), np.zeros_like(ds_lr)])
-
     fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=1)
     fnr = 1 - tpr
     eer_index = np.nanargmin(np.abs(fnr - fpr))
@@ -110,12 +112,14 @@ def cllr(ss_lr, ds_lr):
     return cllr_value
 
 
-st.set_page_config(page_title="LR-based System Evaluator",
+# Header
+st.set_page_config(page_title="LRs Evaluator",
                    page_icon="⚖️")
 st.title("⚖️ LR-based System Evaluator")
 st.write("Author: Guangmou"
-         "  \n e-Mail: forensicstats@hotmail.com")
+         "  \n E-mail: forensicstats@hotmail.com")
 st.markdown("---")
+
 
 # Get Input LRs and Other Parameters
 ss_lr_input = st.text_input('LR Values of Positive Pairs',
@@ -123,6 +127,7 @@ ss_lr_input = st.text_input('LR Values of Positive Pairs',
 ds_lr_input = st.text_input('LR Values of Negative Pairs',
                              '0.002, 0.01, 0.3, 0.5, 0.9, 1.2, 0.6, 0.05, 0.006, 1.3, 0.4, 0.2, 0.03, 1.1, 2, 0.0005')
 
+# ROC Optional Settings
 with st.expander('⚙️  ROC Setting'):
     col1, col2 = st.columns(2)
     with col1:
@@ -131,6 +136,7 @@ with st.expander('⚙️  ROC Setting'):
         y_range_input_roc = st.text_input('Y Range (e.g. 0, 1)', '0, 1', key="y_range_roc")
     show_auc_input = st.selectbox('Show the AUC', ['Yes', 'No'])
 
+# DET Optional Settings
 with st.expander('⚙️  DET Setting'):
     col1, col2 = st.columns(2)
     with col1:
@@ -139,6 +145,7 @@ with st.expander('⚙️  DET Setting'):
         y_range_input_det = st.text_input('Y Range (e.g. 0, 1)', '0, 1', key="y_range_det")
     show_eer_point_input = st.selectbox('Show the EER point', ['Yes', 'No'])
 
+# Tippett Plot Optional Settings
 with st.expander('⚙️  Tippett Setting'):
     evi_value_input = st.text_input('Input the Evidence LR ("None" or input a valid positive number)',
                                     'None')
@@ -170,15 +177,6 @@ try:
 except ValueError:
     st.error("Please enter valid numbers, separated by commas.")
 
-# Convert the Line Type
-if line_type_input == 'solid':
-    line_type_input = '-'
-elif line_type_input == 'dotted':
-    line_type_input = ':'
-elif line_type_input == 'dashed':
-    line_type_input = '--'
-elif line_type_input == 'dash-dot':
-    line_type_input = '-.'
 
 # Calculate the AUC
 if st.button("🧮  Calculate the AUC", key="auc_button"):
@@ -245,6 +243,15 @@ if st.button("📈  Generate the DET Curve", key="det_button"):
 
 # Generate the Tippett Plot
 if st.button("📈  Generate the Tippett Plot", key="tippett_button"):
+    # Convert the Line Type
+    if line_type_input == 'solid':
+        line_type_input = '-'
+    elif line_type_input == 'dotted':
+        line_type_input = ':'
+    elif line_type_input == 'dashed':
+        line_type_input = '--'
+    elif line_type_input == 'dash-dot':
+        line_type_input = '-.'
     try:
         fig = tippett_plot(ss_lr_input, ds_lr_input, evi_value_input,
                            x_range_input_tippett, y_range_input_tippett,
