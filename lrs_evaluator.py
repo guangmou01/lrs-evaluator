@@ -5,6 +5,7 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
 import io
 
+
 def tippett_plot(ss_lr, ds_lr, evidence_lr,
                  x_range, y_range,
                  ss_lr_tag, ds_lr_tag,
@@ -136,7 +137,7 @@ with st.expander('⚙️  DET Setting'):
     show_eer_point_input = st.selectbox('Show the EER point', ['Yes', 'No'])
 
 with st.expander('⚙️  Tippett Setting'):
-    evi_value_input = st.text_input('Input a Evidence LR ("None" or input a valid positive number)',
+    evi_value_input = st.text_input('Input the Evidence LR ("None" or input a valid positive number)',
                                     'None')
     col1, col2 = st.columns(2)
     with col1:
