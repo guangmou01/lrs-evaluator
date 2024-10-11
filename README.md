@@ -1,7 +1,7 @@
 # LR-based System Evaluator (LRs-Evaluator)
 
 ## Abstract
-This script is based on Streamlit to provide a convenient tool for relevant practitioners to evaluate the performance (mainly validity) of LR-based systems in forensic practice and forensic scientific research activities.
+This script is based on Streamlit to provide a convenient tool for relevant practitioners to evaluate the performance (mainly validity) of LR-based systems in forensic practice and forensic research activities.
 
 ## Basic Functions
 
