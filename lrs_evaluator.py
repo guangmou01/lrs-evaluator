@@ -5,7 +5,6 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
 import io
 
-
 def tippett_plot(ss_lr, ds_lr, evidence_lr,
                  x_range, y_range,
                  ss_lr_tag, ds_lr_tag,
@@ -107,6 +106,7 @@ def cllr(ss_lr, ds_lr):
     n_vali_ss = len(ss_lr)
     n_vali_ds = len(ds_lr)
     cllr_value = 0.5 * (1 / n_vali_ss * sum(punish_ss) + 1 / n_vali_ds * sum(punish_ds))
+
     return cllr_value
 
 
@@ -218,7 +218,7 @@ if st.button("📈  Generate the ROC Curve", key="roc_button"):
         buf.seek(0)
 
         # Download Button
-        st.download_button("⏬  Download the ROC Curve", buf, "roc_curve.png", "image/png")
+        st.download_button("💾  Download the ROC Curve", buf, "roc_curve.png", "image/png")
     except Exception as e:
         st.error(f"Error generating ROC curve: {str(e)}")
 
@@ -236,7 +236,7 @@ if st.button("📈  Generate the DET Curve", key="det_button"):
         buf.seek(0)
 
         # Download Button
-        st.download_button("⏬  Download the DET Curve", buf, "det_curve.png", "image/png")
+        st.download_button("💾  Download the DET Curve", buf, "det_curve.png", "image/png")
     except Exception as e:
         st.error(f"Error generating DET curve: {str(e)}")
 
@@ -256,6 +256,8 @@ if st.button("📈  Generate the Tippett Plot", key="tippett_button"):
         buf.seek(0)
 
         # Download Button
-        st.download_button("⏬  Download the Tippett Plot", buf, "tippett_plot.png", "image/png")
+        st.download_button("💾  Download the Tippett Plot", buf, "tippett_plot.png", "image/png")
     except Exception as e:
         st.error(f"Error generating tippett plot: {str(e)}")
+
+# streamlit run LR_Evaluator_v1.0.py
