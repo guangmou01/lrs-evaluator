@@ -1,1 +1,1 @@
-# LR-based System Evaluator (LRs Evaluator)
+# LR-based System Evaluator (LRs-Evaluator)
