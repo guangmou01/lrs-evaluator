@@ -37,13 +37,32 @@ def auc(ss_lr, ds_lr):
 **EER**:
 ```python
 def eer(ss_lr, ds_lr):
-    scores = np.concatenate([ss_lr, ds_lr])
-    labels = np.concatenate([np.ones_like(ss_lr), np.zeros_like(ds_lr)])
-    fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=1)
-    fnr = 1 - tpr
-    eer_index = np.nanargmin(np.abs(fnr - fpr))
-    eer_value = (fpr[eer_index] + fnr[eer_index]) / 2
-    eer_threshold = thresholds[eer_index]
+    ss_log_lr = np.log10(ss_lr)
+    ds_log_lr = np.log10(ds_lr)
+    num_log_thresholds = 50000
+    min_num_log_thresholds = min(np.min(ss_log_lr), np.min(ds_log_lr))
+    max_num_log_thresholds = max(np.max(ss_log_lr), np.max(ds_log_lr))
+    if min_num_log_thresholds == -np.inf:
+        min_num_log_thresholds = np.finfo(float).tiny
+    if max_num_log_thresholds == np.inf:
+        max_num_log_thresholds = np.finfo(float).max
+    log_thresholds = np.linspace(min_num_log_thresholds, max_num_log_thresholds, num_log_thresholds)
+    ss_corr = np.zeros(num_log_thresholds)
+    ds_corr = np.zeros(num_log_thresholds)
+    for i, log_threshold in enumerate(log_thresholds):
+        ss_corr[i] = np.sum(ss_log_lr < log_threshold)
+        ds_corr[i] = np.sum(ds_log_lr > log_threshold)
+    fpr = ss_corr / len(ss_lr)
+    fnr = ds_corr / len(ds_lr)
+    min_diff = np.min(np.abs(fpr - fnr))
+    indexes = np.where(np.abs(fpr - fnr) == min_diff)[0]
+    min_log_threshold = log_thresholds[indexes[0]]
+    max_log_threshold = log_thresholds[indexes[-1]]
+    mid_log_threshold = (min_log_threshold + max_log_threshold) / 2
+    m_fpr = np.sum(ss_log_lr < mid_log_threshold) / len(ss_lr)
+    m_fnr = np.sum(ds_log_lr > mid_log_threshold) / len(ds_lr)
+    eer_value = (m_fpr + m_fnr) / 2
+    eer_threshold = 10 ** mid_log_threshold
 
     return eer_value, eer_threshold
 ```
