@@ -12,34 +12,33 @@ def auc(ss_lr, ds_lr):
 
     return auc_value
 
-
 def eer(ss_lr, ds_lr):
     ss_log_lr = np.log10(ss_lr)
     ds_log_lr = np.log10(ds_lr)
     num_log_thresholds = 50000
-    min_num_log_thresholds = min(np.min(ss_log_lr), np.min(ds_log_lr))
-    max_num_log_thresholds = max(np.max(ss_log_lr), np.max(ds_log_lr))
-    if min_num_log_thresholds == -np.inf:
-        min_num_log_thresholds = np.finfo(float).tiny
-    if max_num_log_thresholds == np.inf:
-        max_num_log_thresholds = np.finfo(float).max
-    log_thresholds = np.linspace(min_num_log_thresholds, max_num_log_thresholds, num_log_thresholds)
-    ss_corr = np.zeros(num_log_thresholds)
-    ds_corr = np.zeros(num_log_thresholds)
+    min_log_threshold = min(np.min(ss_log_lr), np.min(ds_log_lr))
+    max_log_threshold = max(np.max(ss_log_lr), np.max(ds_log_lr))
+    if min_log_threshold == -np.inf:
+        min_log_threshold = np.finfo(float).tiny
+    if max_log_threshold == np.inf:
+        max_log_threshold = np.finfo(float).max
+    log_thresholds = np.linspace(min_log_threshold, max_log_threshold, num_log_thresholds)
+    ss_error = np.zeros(num_log_thresholds)
+    ds_error = np.zeros(num_log_thresholds)
     for i, log_threshold in enumerate(log_thresholds):
-        ss_corr[i] = np.sum(ss_log_lr < log_threshold)
-        ds_corr[i] = np.sum(ds_log_lr > log_threshold)
-    fpr = ss_corr / len(ss_lr)
-    fnr = ds_corr / len(ds_lr)
+        ss_error[i] = np.sum(ss_log_lr < log_threshold)
+        ds_error[i] = np.sum(ds_log_lr > log_threshold)
+    fpr = ss_error / len(ss_lr)
+    fnr = ds_error / len(ds_lr)
     min_diff = np.min(np.abs(fpr - fnr))
     indexes = np.where(np.abs(fpr - fnr) == min_diff)[0]
-    min_log_threshold = log_thresholds[indexes[0]]
-    max_log_threshold = log_thresholds[indexes[-1]]
-    mid_log_threshold = (min_log_threshold + max_log_threshold) / 2
-    m_fpr = np.sum(ss_log_lr < mid_log_threshold) / len(ss_lr)
-    m_fnr = np.sum(ds_log_lr > mid_log_threshold) / len(ds_lr)
+    min_err_log_threshold = log_thresholds[indexes[0]]
+    max_err_log_threshold = log_thresholds[indexes[-1]]
+    mid_err_log_threshold = (min_err_log_threshold + max_err_log_threshold) / 2
+    m_fpr = np.sum(ss_log_lr < mid_err_log_threshold) / len(ss_lr)
+    m_fnr = np.sum(ds_log_lr > mid_err_log_threshold) / len(ds_lr)
     eer_value = (m_fpr + m_fnr) / 2
-    eer_threshold = 10 ** mid_log_threshold
+    eer_threshold = 10 ** mid_err_log_threshold
 
     return eer_value, eer_threshold
 
@@ -139,7 +138,6 @@ st.write("Author: Guangmou"
          "  \n E-mail: forensicstats@hotmail.com")
 st.markdown("---")
 
-
 # Get Input LRs and Other Parameters
 ss_lr_input = st.text_input('LR Values of Positive Pairs',
                              '0.8, 1, 5, 3, 9, 10, 25, 6, 20, 18, 0.9, 0.7, 11')
@@ -195,7 +193,6 @@ try:
     y_range_input_roc = np.array([float(x) for x in y_range_input_roc.split(',')])
 except ValueError:
     st.error("Please enter valid numbers, separated by commas.")
-
 
 # Calculate the AUC
 if st.button("🧮  Calculate the AUC", key="auc_button"):
