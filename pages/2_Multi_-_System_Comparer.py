@@ -318,7 +318,6 @@ if st.button("🧮  Generate Numeric Metrics"):
     # Create and Display DataFrame
     if metrics:
         metrics_df = pd.DataFrame(metrics)
-        st.write("### Numeric Metrics for Selected Systems")
         st.dataframe(metrics_df)
 
         # Allow the user to download the metrics as CSV
