@@ -1,8 +1,75 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
+from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import io
+
+def auc(ss_lr, ds_lr):
+    scores = np.concatenate([ss_lr, ds_lr])
+    labels = np.concatenate([np.ones_like(ss_lr), np.zeros_like(ds_lr)])
+    auc_value = roc_auc_score(labels, scores)
+
+    return auc_value
+
+def eer(ss_lr, ds_lr):
+    ss_log_lr = np.log10(ss_lr)
+    ds_log_lr = np.log10(ds_lr)
+    num_log_thresholds = 50000
+    min_log_threshold = min(np.min(ss_log_lr), np.min(ds_log_lr))
+    max_log_threshold = max(np.max(ss_log_lr), np.max(ds_log_lr))
+    if min_log_threshold == -np.inf:
+        min_log_threshold = np.finfo(float).tiny
+    if max_log_threshold == np.inf:
+        max_log_threshold = np.finfo(float).max
+    log_thresholds = np.linspace(min_log_threshold, max_log_threshold, num_log_thresholds)
+    ss_error = np.zeros(num_log_thresholds)
+    ds_error = np.zeros(num_log_thresholds)
+    for i, log_threshold in enumerate(log_thresholds):
+        ss_error[i] = np.sum(ss_log_lr < log_threshold)
+        ds_error[i] = np.sum(ds_log_lr > log_threshold)
+    fpr = ss_error / len(ss_lr)
+    fnr = ds_error / len(ds_lr)
+    min_diff = np.min(np.abs(fpr - fnr))
+    indexes = np.where(np.abs(fpr - fnr) == min_diff)[0]
+    min_err_log_threshold = log_thresholds[indexes[0]]
+    max_err_log_threshold = log_thresholds[indexes[-1]]
+    mid_err_log_threshold = (min_err_log_threshold + max_err_log_threshold) / 2
+    m_fpr = np.sum(ss_log_lr < mid_err_log_threshold) / len(ss_lr)
+    m_fnr = np.sum(ds_log_lr > mid_err_log_threshold) / len(ds_lr)
+    eer_value = (m_fpr + m_fnr) / 2
+    eer_threshold = 10 ** mid_err_log_threshold
+
+    return eer_value, eer_threshold
+
+def cllr(ss_lr, ds_lr):
+    punish_ss = np.log2(1 + (1 / ss_lr))
+    punish_ds = np.log2(1 + ds_lr)
+    n_vali_ss = len(ss_lr)
+    n_vali_ds = len(ds_lr)
+    cllr_value = 0.5 * (1 / n_vali_ss * sum(punish_ss) + 1 / n_vali_ds * sum(punish_ds))
+
+    return cllr_value
+
+def calculate_metrics(system_name, ss_lr, ds_lr):
+    try:
+        ss_lr = np.array([float(x) for x in ss_lr.split(',')])
+        ds_lr = np.array([float(x) for x in ds_lr.split(',')])
+        eer_value, eer_threshold = eer(ss_lr, ds_lr)
+        cllr_value = cllr(ss_lr, ds_lr)
+        auc_value = auc(ss_lr, ds_lr)
+        return {
+            "System": system_name,
+            "EER": eer_value,
+            "EER-threshold": eer_threshold,
+            "Log10-EER-threshold": np.log10(eer_threshold),
+            "Cllr": cllr_value,
+            "AUC": auc_value
+        }
+    except Exception as e:
+        st.error(f"Error calculating metrics for {system_name}: {str(e)}")
+        return None
 
 def muti_tippett_plot(n_1, ss_lr_1, ds_lr_1, line_type_1,
                       n_2, ss_lr_2, ds_lr_2, line_type_2,
@@ -213,6 +280,53 @@ try:
     y_range_input = np.array([float(x) for x in y_range_input.split(',')])
 except ValueError:
     st.error("Please enter valid numbers, separated by commas.")
+
+# Generate Numeric Metrics
+if st.button("🧮  Generate Numeric Metrics"):
+    metrics = []
+
+    # System 1
+    if n_1_input == "Yes":
+        system_1_metrics = calculate_metrics("System 1", ss_lr_1_input, ds_lr_1_input)
+        if system_1_metrics:
+            metrics.append(system_1_metrics)
+
+    # System 2
+    if n_2_input == "Yes":
+        system_2_metrics = calculate_metrics("System 2", ss_lr_2_input, ds_lr_2_input)
+        if system_2_metrics:
+            metrics.append(system_2_metrics)
+
+    # System 3
+    if n_3_input == "Yes":
+        system_3_metrics = calculate_metrics("System 3", ss_lr_3_input, ds_lr_3_input)
+        if system_3_metrics:
+            metrics.append(system_3_metrics)
+
+    # System 4
+    if n_4_input == "Yes":
+        system_4_metrics = calculate_metrics("System 4", ss_lr_4_input, ds_lr_4_input)
+        if system_4_metrics:
+            metrics.append(system_4_metrics)
+
+    # System 5
+    if n_5_input == "Yes":
+        system_5_metrics = calculate_metrics("System 5", ss_lr_5_input, ds_lr_5_input)
+        if system_5_metrics:
+            metrics.append(system_5_metrics)
+
+    # Create and Display DataFrame
+    if metrics:
+        metrics_df = pd.DataFrame(metrics)
+        st.write("### Numeric Metrics for Selected Systems")
+        st.dataframe(metrics_df)
+
+        # Allow the user to download the metrics as CSV
+        csv = metrics_df.to_csv(index=False).encode('utf-8')
+        st.download_button("💾 Download Metrics as CSV", data=csv, file_name="metrics.csv", mime="text/csv")
+    else:
+        st.warning("No metrics calculated. Ensure at least one system is selected and has valid inputs.")
+
 
 # Generate the Tippett Plot
 if st.button("📈  Generate the Multi Tippett Plot"):
