@@ -113,7 +113,8 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr,
     ax.plot(ds_lr_sorted, ds_cumulative, label=ds_lr_tag, color='blue', linestyle=line_type)
     ax.plot(ss_lr_sorted, ss_cumulative, label=ss_lr_tag, color='red', linestyle=line_type)
     ax.axvline(0, color='black', linestyle='--')
-    ax.legend(loc=legend_pos)
+    if legend_pos != 'None':
+        ax.legend(loc=legend_pos)
     ax.set_xlim(x_range)
     ax.set_ylim(y_range)
     ax.set_xlabel('Log10 Likelihood Ratio')
@@ -177,7 +178,8 @@ with st.expander('⚙️  Tippett Setting'):
     with col2:
         ds_lr_tag_input = st.text_input('Name the Tag for Negative Pairs', 'Different Source')
     line_type_input = st.selectbox('Line Type', ['solid', 'dotted', 'dashed', 'dash-dot'])
-    legend_pos_input = st.selectbox('Position of Legend', ['lower left', 'lower right',
+    legend_pos_input = st.selectbox('Position of Legend', ['None',
+                                                           'lower left', 'lower right',
                                                            'center left', 'center right',
                                                            'upper left', 'upper right'])
 
