@@ -98,7 +98,8 @@ def muti_tippett_plot(n_1, ss_lr_1, ds_lr_1, line_type_1,
 
     handles = [Line2D([0], [0], color='blue', lw=1, linestyle='-', label=ds_lr_tag),
                Line2D([0], [0], color='red', lw=1, linestyle='-', label=ss_lr_tag)]
-    ax.legend(handles=handles, loc=legend_pos)
+    if legend_pos != 'None':
+        ax.legend(handles=handles, loc=legend_pos)
 
     return fig_muti_tippett
 
@@ -201,7 +202,8 @@ with st.expander('⚙️  Tippett Setting'):
         ss_lr_tag_input = st.text_input('Name the Tag for Positive Pairs', 'Same Source')
     with col2:
         ds_lr_tag_input = st.text_input('Name the Tag for Negative Pairs', 'Different Source')
-    legend_pos_input = st.selectbox('Position of Legend', ['lower left', 'lower right',
+    legend_pos_input = st.selectbox('Position of Legend', ['None',
+                                                           'lower left', 'lower right',
                                                            'center left', 'center right',
                                                            'upper left', 'upper right'])
 
