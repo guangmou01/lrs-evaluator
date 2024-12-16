@@ -173,7 +173,7 @@ def muti_tippett_plot(n_1, ss_lr_1, ds_lr_1, line_type_1,
 # Header
 st.set_page_config(page_title="LRs Evaluator",
                    page_icon="⚖️")
-st.title("⚖️ Multi Tippett Plot Generator")
+st.title("⚖️ multi-System Comparer")
 st.write("Author: Guangmou"
          "  \n E-mail: forensicstats@hotmail.com")
 st.markdown("---")
