@@ -12,12 +12,12 @@ st.write("Author: Guangmou"
 st.markdown("---")
 
 
-st.markdown("### Please Upload a .csv File")
-uploaded_file = st.file_uploader("Upload a target-file:", type=["csv"])
+st.markdown("### Please Upload a .csv File:")
+uploaded_file = st.file_uploader("Upload a target-file", type=["csv"])
 
 if uploaded_file is not None:
     st.markdown("### Does It Have a Header?")
-    header_option = st.radio("Choose whether to remove the header:", options=["Yes", "No"])
+    header_option = st.radio("Choose whether to remove the header", options=["Yes", "No"])
 
     if header_option == "Yes":
         df = pd.read_csv(uploaded_file)
@@ -29,7 +29,7 @@ if uploaded_file is not None:
 
     if not df.empty:
         col_options = df.columns if header_option == "Yes" else [f"Column {i+1}" for i in range(df.shape[1])]
-        selected_col = st.selectbox("Which column do you want to extract:", options=col_options)
+        selected_col = st.selectbox("Which column do you want to extract", options=col_options)
 
         if header_option == "Yes":
             column_data = df[selected_col].dropna()
@@ -38,7 +38,7 @@ if uploaded_file is not None:
             column_data = df.iloc[:, col_index].dropna()
 
         st.markdown("### Transformation Options:")
-        transformation = st.radio("Choose a transformation:",
+        transformation = st.radio("Choose a transformation",
                                   options=["➡️ Raw", "➡️ Base-10 Logarithm", "➡️ Power of 10"])
 
         try:
