@@ -12,11 +12,11 @@ st.write("Author: Guangmou"
 st.markdown("---")
 
 
-st.markdown("### Please Upload a .csv File:")
+st.markdown("#### 📃 Please Upload a .csv File:")
 uploaded_file = st.file_uploader("Upload a target file", type=["csv"])
 
 if uploaded_file is not None:
-    st.markdown("### Pre-process:")
+    st.markdown("#### 📃 Pre-process:")
     header_option = st.selectbox("Choose whether to remove the header:", options=["Yes", "No"])
 
 
@@ -58,7 +58,7 @@ if uploaded_file is not None:
 
             vector_data = ",".join(transformed_data.astype(str))
 
-            st.markdown("### Pre-view:")
+            st.markdown("#### 📃 Pre-view:")
             st.code(vector_data)
 
             buffer = io.BytesIO()
