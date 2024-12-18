@@ -79,7 +79,7 @@ def muti_tippett_plot(n_1, ss_lr_1, ds_lr_1, line_type_1,
                       evidence_lr,
                       x_range, y_range,
                       ss_lr_tag, ds_lr_tag,
-                      legend_pos):
+                      legend_pos, e_pos):
 
     fig_muti_tippett, ax = plt.subplots(figsize=(8, 6))
     ax.axvline(0, color='black', linestyle='--')
@@ -160,7 +160,7 @@ def muti_tippett_plot(n_1, ss_lr_1, ds_lr_1, line_type_1,
         ax.annotate(f'E = {evidence_lr}',
                     xy=(np.log10(evidence_lr), 0.5),
                     xytext=(np.log10(evidence_lr)+(max(x_range)-min(x_range))/50, 0.5),
-                    fontsize=10, ha='left', color='black')
+                    fontsize=10, ha=e_pos, color='black')
         # Annotate the Evidence Value
 
     handles = [Line2D([0], [0], color='blue', lw=1, linestyle='-', label=ds_lr_tag),
@@ -269,10 +269,18 @@ with st.expander('⚙️  Tippett Setting'):
         ss_lr_tag_input = st.text_input('Name the Tag for Positive Pairs', 'Same Source')
     with col2:
         ds_lr_tag_input = st.text_input('Name the Tag for Negative Pairs', 'Different Source')
-    legend_pos_input = st.selectbox('Position of Legend', ['None',
-                                                           'lower left', 'lower right',
-                                                           'center left', 'center right',
-                                                           'upper left', 'upper right'])
+    col1, col2 = st.columns(2)
+    with col1:
+        legend_pos_input = st.selectbox('Position of Legend', ['None',
+                                                               'lower left', 'lower right',
+                                                               'center left', 'center right',
+                                                               'upper left', 'upper right'])
+    with col2:
+        e_pos_input = st.selectbox('Position of Evidence LR', ["right", "left"])
+        if e_pos_input == "left":
+            e_pos_input = "right"
+        else:
+            e_pos_input = "left"
 
 # Convert the Input String to a Floating Point Array
 try:
@@ -338,7 +346,7 @@ if st.button("📈  Generate the Multi Tippett Plot"):
                                         evi_value_input,
                                         x_range_input, y_range_input,
                                         ss_lr_tag_input, ds_lr_tag_input,
-                                        legend_pos_input)
+                                        legend_pos_input, e_pos_input)
         st.pyplot(tippett_fig)
 
         # Save the Figure into BytesIO for Downloading
