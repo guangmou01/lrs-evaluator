@@ -248,8 +248,8 @@ def main():
     cal_ss = np.array([float(x) for x in cal_ss.split(",")])
     cal_ds = np.array([float(x) for x in cal_ds.split(",")])
 
-    st.sidebar.subheader("🔍️ Evidential Score Input")
-    score = st.sidebar.text_area("Input a Evidential Score:", "1.0")
+    st.sidebar.subheader("🔍️ Evidence Score Input")
+    score = st.sidebar.text_area("Input a Evidence Score:", "1.0")
     try:
         score = float(score)
     except ValueError:
