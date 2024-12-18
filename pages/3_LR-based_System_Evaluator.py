@@ -102,7 +102,8 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr,
                  x_range, y_range,
                  ss_lr_tag, ds_lr_tag,
                  line_type,
-                 legend_pos):
+                 legend_pos,
+                 e_pos):
     ss_lr_sorted = np.sort(np.log10(ss_lr))
     ss_cumulative = np.arange(1, len(ss_lr_sorted) + 1) / len(ss_lr_sorted)
     ds_lr_sorted = np.sort(np.log10(ds_lr))[::-1]
@@ -126,7 +127,7 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr,
         ax.annotate(f'E = {evidence_lr}',
                     xy=(np.log10(evidence_lr), 0.5),
                     xytext=(np.log10(evidence_lr)+(max(x_range)-min(x_range))/50, 0.5),
-                    fontsize=10, ha='left', color='black')
+                    fontsize=10, ha=e_pos, color='black')
         # Annotate the Evidence Value
 
     return fig_tippett
@@ -178,10 +179,18 @@ with st.expander('⚙️  Tippett Setting'):
     with col2:
         ds_lr_tag_input = st.text_input('Name the Tag for Negative Pairs', 'Different Source')
     line_type_input = st.selectbox('Line Type', ['solid', 'dotted', 'dashed', 'dash-dot'])
-    legend_pos_input = st.selectbox('Position of Legend', ['None',
-                                                           'lower left', 'lower right',
-                                                           'center left', 'center right',
-                                                           'upper left', 'upper right'])
+    col1, col2 = st.columns(2)
+    with col1:
+        legend_pos_input = st.selectbox('Position of Legend', ['None',
+                                                               'lower left', 'lower right',
+                                                               'center left', 'center right',
+                                                               'upper left', 'upper right'])
+    with col2:
+        e_pos_input = st.selectbox('Position of Evidence LR', ["right", "left"])
+        if e_pos_input == "left":
+            e_pos_input = "right"
+        else:
+            e_pos_input = "left"
 
 # Convert the Input String to a Floating Point Array
 try:
@@ -275,7 +284,7 @@ if st.button("📈  Generate the Tippett Plot", key="tippett_button"):
                                    x_range_input_tippett, y_range_input_tippett,
                                    ss_lr_tag_input, ds_lr_tag_input,
                                    line_type_input,
-                                   legend_pos_input)
+                                   legend_pos_input, e_pos_input)
         st.pyplot(tippett_fig)
 
         # Save the Figure into BytesIO for Downloading
