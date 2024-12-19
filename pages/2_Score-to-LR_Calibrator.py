@@ -536,7 +536,7 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr, line_type):
             zeroline=True,
             zerolinecolor="black",
             zerolinewidth=1,
-            zerolinedash="dash",
+            zerolinedash="dashed",
             showline=True,
             linecolor="black",
             linewidth=1,
