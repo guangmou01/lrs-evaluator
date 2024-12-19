@@ -272,6 +272,12 @@ def linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds,
     fig.add_trace(Scatter(x=[min(x_range), max(x_range)], y=[0.5, 0.5], mode='lines', name='y=0.5 Line',
                           line=dict(color='black', dash='dash')), row=1, col=1)
 
+    # Add black solid lines at y=0 and y=1
+    fig.add_trace(Scatter(x=[min(x_range), max(x_range)], y=[0, 0], mode='lines', name='y=0 Line',
+                          line=dict(color='black', width=1)), row=1, col=1)
+    fig.add_trace(Scatter(x=[min(x_range), max(x_range)], y=[1, 1], mode='lines', name='y=1 Line',
+                          line=dict(color='black', width=1)), row=1, col=1)
+
     # Add calibration line (bottom panel)
     fig.add_trace(Scatter(x=x_range, y=calibration_line, mode='lines', name='Calibration Line',
                           line=dict(color='green')), row=2, col=1)
@@ -291,7 +297,7 @@ def linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds,
                     range=[min(x_range), max(x_range)]),
         yaxis1=dict(title="Probability", showline=True, linewidth=2, linecolor='black', mirror=True, ticks="outside"),
         yaxis2=dict(title="Calibrated log-LR", showline=True, linewidth=2, linecolor='black', mirror=True,
-                    ticks="outside"),
+                    ticks="outside", range=[alpha + beta * min(x_range), alpha + beta * max(x_range)]),
         template=None,
         showlegend=False
     )
@@ -550,7 +556,7 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr, line_type):
             gridcolor="#d3d3d3",
             zeroline=False,
             zerolinecolor="black",
-            zerolinewidth=1,
+            zerolinewidth=2,
             showline=True,
             linecolor="black",
             linewidth=1,
