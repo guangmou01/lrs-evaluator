@@ -16,32 +16,24 @@ def pdf(x, mean, sd):
 
 # 池化方差计算函数
 def pool_variance(g1, g2):
-
     n1, n2 = len(g1), len(g2)
-    g1_var = np.var(g1, ddof=1)
-    g2_var = np.var(g2, ddof=1)
-
+    g1_var, g2_var = np.var(g1, ddof=1), np.var(g2, ddof=1)
     pool_var = ((n1 - 1) * g1_var + (n2 - 1) * g2_var) / (n1 + n2 - 2)
     return pool_var
 
 # 基于原始高斯分布的 LR 校准
 def raw_gaussian_calibration(score, cal_ss, cal_ds):
-
     ss_mean, ds_mean = np.mean(cal_ss), np.mean(cal_ds)
     ss_sd, ds_sd = np.std(cal_ss, ddof=1), np.std(cal_ds, ddof=1)
-
     lr = 10**(np.log10(pdf(score, ss_mean, ss_sd)) - np.log10(pdf(score, ds_mean, ds_sd)))
     return lr, ss_mean, ds_mean, ss_sd, ds_sd
 
 def raw_gaussian_calibration_plot(score, cal_ss, cal_ds):
     ss_mean, ds_mean = np.mean(cal_ss), np.mean(cal_ds)
     ss_sd, ds_sd = np.std(cal_ss, ddof=1), np.std(cal_ds, ddof=1)
-
     x_range = np.linspace(min(min(cal_ss), min(cal_ds)) - 3, max(max(cal_ss), max(cal_ds)) + 3, 5000)
-
-    ss_pdf = pdf(x_range, ss_mean, ss_sd)
-    ds_pdf = pdf(x_range, ds_mean, ds_sd)
-
+    ss_pdf, ds_pdf = pdf(x_range, ss_mean, ss_sd), pdf(x_range, ds_mean, ds_sd)
+    
     fig = go.Figure()
     fig.update_layout(
         width=1000,
@@ -60,7 +52,7 @@ def raw_gaussian_calibration_plot(score, cal_ss, cal_ds):
                    linecolor="black",
                    linewidth=2,
                    mirror=True))
-
+    
     # 添加 Evidence Score 垂直线
     fig.add_trace(go.Scatter(
         x=[score, score],
@@ -112,22 +104,17 @@ def raw_gaussian_calibration_plot(score, cal_ss, cal_ds):
     return fig
 
 def raw_gaussian_calibration_test(cal_ss, cal_ds, test_ss, test_ds):
-
     ss_mean, ds_mean = np.mean(cal_ss), np.mean(cal_ds)
     ss_sd, ds_sd = np.std(cal_ss, ddof=1), np.std(cal_ds, ddof=1)
-
     test_ss_lr = 10**(np.log10(pdf(test_ss, ss_mean, ss_sd)) - np.log10(pdf(test_ss, ds_mean, ds_sd)))
     test_ds_lr = 10**(np.log10(pdf(test_ds, ss_mean, ss_sd)) - np.log10(pdf(test_ds, ds_mean, ds_sd)))
-
     return test_ss_lr, test_ds_lr, ss_mean, ds_mean, ss_sd, ds_sd
 
 # 基于等方差高斯分布的 LR 校准
 def equal_variance_gaussian_calibration(score, cal_ss, cal_ds):
-
     ss_mean, ds_mean = np.mean(cal_ss), np.mean(cal_ds)
     pool_var = pool_variance(cal_ss, cal_ds)
     pool_sd = np.sqrt(pool_var)
-
     lr = 10 ** (np.log10(pdf(score, ss_mean, pool_sd)) - np.log10(pdf(score, ds_mean, pool_sd)))
     return lr, ss_mean, ds_mean, pool_sd
 
@@ -135,9 +122,7 @@ def equal_variance_gaussian_calibration_plot(score, cal_ss, cal_ds):
     ss_mean, ds_mean = np.mean(cal_ss), np.mean(cal_ds)
     pool_var = pool_variance(cal_ss, cal_ds)
     pool_sd = np.sqrt(pool_var)
-
     x_range = np.linspace(min(min(cal_ss), min(cal_ds)) - 3, max(max(cal_ss), max(cal_ds)) + 3, 5000)
-
     ss_pdf = pdf(x_range, ss_mean, pool_sd)
     ds_pdf = pdf(x_range, ds_mean, pool_sd)
 
@@ -211,40 +196,33 @@ def equal_variance_gaussian_calibration_plot(score, cal_ss, cal_ds):
     return fig
 
 def equal_variance_gaussian_calibration_test(cal_ss, cal_ds, test_ss, test_ds):
-
     ss_mean, ds_mean = np.mean(cal_ss), np.mean(cal_ds)
     pool_var = pool_variance(cal_ss, cal_ds)
     pool_sd = np.sqrt(pool_var)
-
     test_ss_lr = 10**(np.log10(pdf(test_ss, ss_mean, pool_sd)) - np.log10(pdf(test_ss, ds_mean, pool_sd)))
     test_ds_lr = 10**(np.log10(pdf(test_ds, ss_mean, pool_sd)) - np.log10(pdf(test_ds, ds_mean, pool_sd)))
-
     return test_ss_lr, test_ds_lr, ss_mean, ds_mean, pool_sd
 
 # 基于线性逻辑回归的 LR 校准
 def linear_logistic_regression_calibration(score, cal_ss, cal_ds,
-                                           solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3):
-
+                                           solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3, c=0.0001):
     scores = np.concatenate((cal_ss, cal_ds)).reshape(-1, 1)
     labels = np.array([1] * len(cal_ss) + [0] * len(cal_ds))
-
-    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol)
+    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c)
     model.fit(scores, labels)
-
     alpha = model.intercept_[0]
     beta = model.coef_[0][0]
-
     lr = 10**(alpha + beta * score)
     return lr, alpha, beta
 
 def linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds,
-                                                solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3):
+                                                solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3, c=0.0001):
     # Prepare the data
     scores = np.concatenate((cal_ss, cal_ds)).reshape(-1, 1)
     labels = np.array([1] * len(cal_ss) + [0] * len(cal_ds))
 
     # Train the logistic regression model
-    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol)
+    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c)
     model.fit(scores, labels)
 
     # Extract the coefficients
@@ -305,52 +283,37 @@ def linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds,
     return fig
 
 def linear_logistic_regression_calibration_test(cal_ss, cal_ds, test_ss, test_ds,
-                                                solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3):
-
+                                                solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3, c=0.0001):
     scores = np.concatenate((cal_ss, cal_ds)).reshape(-1, 1)
     labels = np.array([1] * len(cal_ss) + [0] * len(cal_ds))
-
-    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol)
+    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c)
     model.fit(scores, labels)
-
     alpha = model.intercept_[0]
     beta = model.coef_[0][0]
-
     test_ss_lr = 10**(alpha + beta * test_ss)
     test_ds_lr = 10**(alpha + beta * test_ds)
-
     return test_ss_lr, test_ds_lr, alpha, beta
 
 # 基于贝叶斯模型的 LR 校准
-def bayes_calibration(score, cal_ss, cal_ds):
-
+def bayes_calibration(score, cal_ss, cal_ds, ns, nd):
     ss_mean = np.mean(cal_ss)
-    ss_n = len(cal_ss)
     ds_mean = np.mean(cal_ds)
-    ds_n = len(cal_ds)
-    pool_n = ss_n + ds_n
     pool_var = pool_variance(cal_ss, cal_ds)
-
-    df = ss_n + ds_n - 2
+    pool_n = (ns + nd)/2
+    df = ns + nd - 2
     scaling_factor = 2/(pool_n - 1) + 1
-
     lr = np.exp(t.logpdf(score, df, loc=ss_mean, scale=np.sqrt(scaling_factor * pool_var)) -
                 t.logpdf(score, df, loc=ds_mean, scale=np.sqrt(scaling_factor * pool_var)))
     return lr, ss_mean, ds_mean, pool_var, df
 
-def bayes_calibration_plot(score, cal_ss, cal_ds):
+def bayes_calibration_plot(score, cal_ss, cal_ds, ns, nd):
     ss_mean = np.mean(cal_ss)
-    ss_n = len(cal_ss)
     ds_mean = np.mean(cal_ds)
-    ds_n = len(cal_ds)
-    pool_n = ss_n + ds_n
     pool_var = pool_variance(cal_ss, cal_ds)
-
-    df = ss_n + ds_n - 2
+    pool_n = (ns + nd)/2
+    df = ns + nd - 2
     scaling_factor = 2/(pool_n - 1) + 1
-
     x_range = np.linspace(min(min(cal_ss), min(cal_ds)) - 2, max(max(cal_ss), max(cal_ds)) + 2, 5000)
-
     ss_pdf = np.exp(t.logpdf(x_range, df, loc=ss_mean, scale=np.sqrt(scaling_factor * pool_var)))
     ds_pdf = np.exp(t.logpdf(x_range, df, loc=ds_mean, scale=np.sqrt(scaling_factor * pool_var)))
 
@@ -423,22 +386,18 @@ def bayes_calibration_plot(score, cal_ss, cal_ds):
 
     return fig
 
-def bayes_calibration_test(cal_ss, cal_ds, test_ss, test_ds):
+def bayes_calibration_test(cal_ss, cal_ds, test_ss, test_ds, ns, nd):
     ss_mean = np.mean(cal_ss)
-    ss_n = len(cal_ss)
     ds_mean = np.mean(cal_ds)
-    ds_n = len(cal_ds)
-    pool_n = ss_n + ds_n
     pool_var = pool_variance(cal_ss, cal_ds)
-
-    df = ss_n + ds_n - 2
+    pool_n = (ns + nd)/2
+    df = ns + nd - 2
     scaling_factor = 2/(pool_n - 1) + 1
-
     test_ss_lr = np.exp(t.logpdf(test_ss, df, loc=ss_mean, scale=np.sqrt(scaling_factor * pool_var)) -
                         t.logpdf(test_ss, df, loc=ds_mean, scale=np.sqrt(scaling_factor * pool_var)))
     test_ds_lr = np.exp(t.logpdf(test_ds, df, loc=ss_mean, scale=np.sqrt(scaling_factor * pool_var)) -
                         t.logpdf(test_ds, df, loc=ds_mean, scale=np.sqrt(scaling_factor * pool_var)))
-    return test_ss_lr, test_ds_lr, ds_mean, pool_var, df
+    return test_ss_lr, test_ds_lr, ss_mean, ds_mean, pool_var, df
 
 # 测试结果评估
 def eer(ss_lr, ds_lr):
@@ -468,7 +427,6 @@ def eer(ss_lr, ds_lr):
     m_fnr = np.sum(ds_log_lr > mid_err_log_threshold) / len(ds_lr)
     eer_value = (m_fpr + m_fnr) / 2
     eer_threshold = 10 ** mid_err_log_threshold
-
     return eer_value, eer_threshold
 
 def cllr(ss_lr, ds_lr):
@@ -477,9 +435,7 @@ def cllr(ss_lr, ds_lr):
     n_vali_ss = len(ss_lr)
     n_vali_ds = len(ds_lr)
     cllr_value = 0.5 * (1 / n_vali_ss * sum(punish_ss) + 1 / n_vali_ds * sum(punish_ds))
-
     return cllr_value
-
 
 def tippett_plot(ss_lr, ds_lr, evidence_lr, line_type):
     # Ensure input is 1D numpy arrays
@@ -570,7 +526,6 @@ def tippett_plot(ss_lr, ds_lr, evidence_lr, line_type):
 
     return fig
 
-
 def display_and_download_stats(title, data, file_name):
     """显示 DataFrame 并提供下载功能"""
     st.write(title)
@@ -611,21 +566,21 @@ def main():
     ])
 
     st.sidebar.subheader("️📏 Calibration Sets Input")
-    cal_ss = st.sidebar.text_area("Input Same-source-pairs Score Set:", "1.0, 1.2, 0.9, 1.1")
-    cal_ds = st.sidebar.text_area("Input Different-source-pairs Score Set", "0.4, 0.5, 0.3, 0.6")
+    cal_ss = st.sidebar.text_area("Input Same-source-pairs Score (log10-LR) Set:", "1.0, 1.2, 0.9, 1.1")
+    cal_ds = st.sidebar.text_area("Input Different-source-pairs Score (log10-LR) Set", "0.4, 0.5, 0.3, 0.6")
     cal_ss = np.array([float(x) for x in cal_ss.split(",")])
     cal_ds = np.array([float(x) for x in cal_ds.split(",")])
 
     st.sidebar.subheader("🔍️ Evidence Score Input")
-    score = st.sidebar.text_area("Input a Evidence Score:", "1.0")
+    score = st.sidebar.text_area("Input a Evidence Score (log10-LR):", "1.0")
     try:
         score = float(score)
     except ValueError:
         st.error("Please enter a valid number for the evidential score.")
 
     st.sidebar.subheader("⚖️ Test Sets Input")
-    test_ss = st.sidebar.text_area("Input Same-source-pairs Score Set:", "1.0, 1.3, 0.8")
-    test_ds = st.sidebar.text_area("Input Different-source-pairs Score Set:", "0.2, 0.4, 0.5")
+    test_ss = st.sidebar.text_area("Input Same-source-pairs Score (log10-LR) Set:", "1.0, 1.3, 0.8")
+    test_ds = st.sidebar.text_area("Input Different-source-pairs Score (log10-LR) Set:", "0.2, 0.4, 0.5")
     test_ss = np.array([float(x) for x in test_ss.split(",")])
     test_ds = np.array([float(x) for x in test_ds.split(",")])
 
@@ -646,18 +601,37 @@ def main():
             graphic_re = equal_variance_gaussian_calibration_plot(score, cal_ss, cal_ds)
 
         elif method == "Logistic Regression Calibration":
-            lr, alpha, beta = linear_logistic_regression_calibration(score, cal_ss, cal_ds)
-            calibration_stats = pd.DataFrame({
-                "Metric": ["Alpha", "Beta"],
-                "Value": [alpha, beta]})
-            graphic_re = linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds)
+            c_input = st.text_input('Input the Degree of Regularization:', value="100")
+            if c_input.isdigit():
+                c_value = 1/int(c_input)
+                if c_value > 0:
+                    lr, alpha, beta = linear_logistic_regression_calibration(score, cal_ss, cal_ds, c=c_value)
+                    calibration_stats = pd.DataFrame({
+                        "Metric": ["Alpha", "Beta"],
+                        "Value": [alpha, beta]})
+                    graphic_re = linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds, c=c_value)
+                else:
+                    st.error("The degree of regularization should be a positive number.")
+            else:
+                st.warning("Please input a valid number for the degree of regularization (>1).")
 
         elif method == "Bayes Model Calibration":
-            lr, ss_mean, ds_mean, pool_var, df = bayes_calibration(score, cal_ss, cal_ds)
-            calibration_stats = pd.DataFrame({
-                "Metric": ["SS Mean", "DS Mean", "Pool Variance", "Degrees of Freedom"],
-                "Value": [ss_mean, ds_mean, pool_var, df]})
-            graphic_re = bayes_calibration_plot(score, cal_ss, cal_ds)
+            ns_input = st.text_input('Input the Number of Individuals in SS-Calibration Set:', value="5")
+            nd_input = st.text_input('Input the Number of Individuals in DS-Calibration Set:', value="5")
+            if ns_input.isdigit() and nd_input.isdigit():
+                ns_value = int(ns_input)
+                nd_value = int(nd_input)
+                if ns_value > 1 and nd_value > 1:
+                    lr, ss_mean, ds_mean, pool_var, df = bayes_calibration(
+                        score, cal_ss, cal_ds, ns_value, nd_value)
+                    calibration_stats = pd.DataFrame({
+                        "Metric": ["SS Mean", "DS Mean", "Pool Variance", "Degrees of Freedom"],
+                        "Value": [ss_mean, ds_mean, pool_var, df]})
+                    graphic_re = bayes_calibration_plot(score, cal_ss, cal_ds, ns_value, nd_value)
+                else:
+                    st.error("Number of speakers must be greater than 1.")
+            else:
+                st.warning("Please input a valid number for the number of speakers.")
 
         # 显示校准后的 LR
         st.write(f"🧮 Non-calibrated Score (Evidence Score): {score}")
@@ -679,10 +653,14 @@ def main():
 
     elif mode == "Test Mode":
         st.header("⚖️ Result of Test")
+        # Initialize test LR variables to avoid UnboundLocalError
+        test_ss_lr = np.array([])
+        test_ds_lr = np.array([])
+        calibration_stats = pd.DataFrame()
+
         if method == "Raw Gaussian Calibration":
             test_ss_lr, test_ds_lr, ss_mean, ds_mean, ss_sd, ds_sd = raw_gaussian_calibration_test(
                 cal_ss, cal_ds, test_ss, test_ds)
-
             calibration_stats = pd.DataFrame({
                 "Metric": ["SS Mean", "DS Mean", "SS SD", "DS SD"],
                 "Value": [ss_mean, ds_mean, ss_sd, ds_sd]})
@@ -690,53 +668,69 @@ def main():
         elif method == "equal-Variance Gaussian Calibration":
             test_ss_lr, test_ds_lr, ss_mean, ds_mean, pool_sd = equal_variance_gaussian_calibration_test(
                 cal_ss, cal_ds, test_ss, test_ds)
-
             calibration_stats = pd.DataFrame({
                 "Metric": ["SS Mean", "DS Mean", "Pool SD"],
                 "Value": [ss_mean, ds_mean, pool_sd]})
 
         elif method == "Logistic Regression Calibration":
-            test_ss_lr, test_ds_lr, alpha, beta = linear_logistic_regression_calibration_test(
-                cal_ss, cal_ds, test_ss, test_ds,
-                solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3)
-
-            calibration_stats = pd.DataFrame({
-                "Metric": ["Alpha", "Beta"],
-                "Value": [alpha, beta]})
+            c_input = st.text_input('Input the Degree of Regularization:', value="100")
+            if c_input.isdigit():
+                c_value = 1/int(c_input)
+                if c_value > 0:
+                    test_ss_lr, test_ds_lr, alpha, beta = linear_logistic_regression_calibration_test(
+                        cal_ss, cal_ds, test_ss, test_ds,
+                        solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3, c=c_value)
+                    calibration_stats = pd.DataFrame({
+                        "Metric": ["Alpha", "Beta"],
+                        "Value": [alpha, beta]})
+                else:
+                    st.error("The degree of regularization should be a positive number.")
+            else:
+                st.warning("Please input a valid number for the degree of regularization (>1).")
 
         elif method == "Bayes Model Calibration":
-            test_ss_lr, test_ds_lr, ds_mean, pool_var, df = bayes_calibration_test(
-                cal_ss, cal_ds, test_ss, test_ds)
+            ns_input = st.text_input('Input the Number of Individuals in SS-Calibration Set:', value="5")
+            nd_input = st.text_input('Input the Number of Individuals in DS-Calibration Set:', value="5")
+            if ns_input.isdigit() and nd_input.isdigit():
+                ns_value = int(ns_input)
+                nd_value = int(nd_input)
+                if ns_value > 1 and nd_value > 1:
+                    test_ss_lr, test_ds_lr, ss_mean, ds_mean, pool_var, df = bayes_calibration_test(
+                        cal_ss, cal_ds, test_ss, test_ds, ns_value, nd_value)
+                    calibration_stats = pd.DataFrame({
+                        "Metric": ["SS Mean", "DS Mean", "Pool Variance", "Degrees of Freedom"],
+                        "Value": [ss_mean, ds_mean, pool_var, df]})
+                else:
+                    st.error("Number of speakers must be greater than 1.")
+            else:
+                st.warning("Please input a valid number for the number of speakers.")
 
-            calibration_stats = pd.DataFrame({
-                "Metric": ["DS Mean", "Pool Variance", "Degrees of Freedom"],
-                "Value": [ds_mean, pool_var, df]})
+        # Compute and display Cllr, EER, and Tippett Plot only if LRs are available
+        if test_ss_lr.size > 0 and test_ds_lr.size > 0:
+            cllr_raw = cllr(10**test_ss, 10**test_ds)
+            eer_raw, eer_threshold_raw = eer(10**test_ss, 10**test_ds)
+            log10_eer_threshold_raw = np.log10(eer_threshold_raw)
+            cllr_calibrated = cllr(test_ss_lr, test_ds_lr)
+            eer_calibrated, eer_threshold_calibrated = eer(test_ss_lr, test_ds_lr)
+            log10_eer_threshold_calibrated = np.log10(eer_threshold_calibrated)
+            evaluation_stats = pd.DataFrame({
+                "Metrics": ["Cllr", "EER", "EER-threshold", "Log10-EER-threshold"],
+                "Non-calibrated": [cllr_raw, eer_raw, eer_threshold_raw, log10_eer_threshold_raw],
+                "Calibrated": [cllr_calibrated, eer_calibrated, eer_threshold_calibrated, log10_eer_threshold_calibrated]})
 
-        # 计算 CLLR 和 EER
-        cllr_value = cllr(test_ss_lr, test_ds_lr)
-        eer_value, eer_threshold = eer(test_ss_lr, test_ds_lr)
-        log10_eer_threshold = np.log10(eer_threshold)
-
-        evaluation_stats = pd.DataFrame({
-            "Metric": ["Cllr", "EER", "EER-threshold", "Log10-EER-threshold"],
-            "Value": [cllr_value, eer_value, eer_threshold, log10_eer_threshold]})
-
-        # 显示和下载 Test SS 和 DS LR
-        display_and_download_lr("📋 Calibrated Test SS LR", test_ss_lr, "test_ss_lr.txt")
-        display_and_download_lr("📋 Calibrated Test DS LR", test_ds_lr, "test_ds_lr.txt")
-
-        # 显示和下载 Calibration Stats
-        display_and_download_stats("📊 Calibration Statistics", calibration_stats, "calibration_stats.csv")
-
-        # 显示和下载 Evaluation Metrics
-        display_and_download_stats("📊 Evaluation Metrics", evaluation_stats, "evaluation_metrics.csv")
+            # Display and download results
+            display_and_download_lr("📋 Calibrated Test SS LR", test_ss_lr, "test_ss_lr.txt")
+            display_and_download_lr("📋 Calibrated Test DS LR", test_ds_lr, "test_ds_lr.txt")
+            display_and_download_stats("📊 Calibration Statistics", calibration_stats, "calibration_stats.csv")
+            display_and_download_stats("📊 Evaluation Metrics", evaluation_stats, "evaluation_metrics.csv")
+        else:
+            st.warning("Test LRs could not be computed. Please check your input values.")
 
         # Tippett Plot Optional Settings
         with st.expander('⚙️  Tippett Setting'):
             evi_value_input = st.text_input('Input the Evidence LR ("None" or input a valid positive number)',
                                             'None')
             line_type_input = st.selectbox('Line Type', ['solid', 'dotted', 'dashed', 'dash-dot'])
-            col1, col2 = st.columns(2)
 
             # Generate the Tippett Plot
             if st.button("📈  Generate the Tippett Plot", key="tippett_button"):
@@ -762,7 +756,6 @@ def main():
                     st.download_button("💾  Download the Tippett Plot", buf, "tippett_plot.png", "image/png")
                 except Exception as e:
                     st.error(f"Error generating tippett plot: {str(e)}")
-
 
 if __name__ == "__main__":
     main()
