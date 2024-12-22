@@ -33,7 +33,7 @@ def raw_gaussian_calibration_plot(score, cal_ss, cal_ds):
     ss_sd, ds_sd = np.std(cal_ss, ddof=1), np.std(cal_ds, ddof=1)
     x_range = np.linspace(min(min(cal_ss), min(cal_ds)) - 3, max(max(cal_ss), max(cal_ds)) + 3, 5000)
     ss_pdf, ds_pdf = pdf(x_range, ss_mean, ss_sd), pdf(x_range, ds_mean, ds_sd)
-    
+
     fig = go.Figure()
     fig.update_layout(
         width=1000,
@@ -52,7 +52,7 @@ def raw_gaussian_calibration_plot(score, cal_ss, cal_ds):
                    linecolor="black",
                    linewidth=2,
                    mirror=True))
-    
+
     # 添加 Evidence Score 垂直线
     fig.add_trace(go.Scatter(
         x=[score, score],
@@ -558,7 +558,7 @@ def main():
     st.sidebar.title("⚙️ Setting")
 
     mode = st.sidebar.radio("Choose a Mode", ["Calibration Mode", "Test Mode"])
-    method = st.sidebar.selectbox("Choose a Calibration Method", [
+    method = st.sidebar.selectbox("Choose a Calibration Method:", [
         "Raw Gaussian Calibration",
         "equal-Variance Gaussian Calibration",
         "Logistic Regression Calibration",
@@ -567,7 +567,7 @@ def main():
 
     st.sidebar.subheader("️📏 Calibration Sets Input")
     cal_ss = st.sidebar.text_area("Input Same-source-pairs Score (log10-LR) Set:", "1.0, 1.2, 0.9, 1.1")
-    cal_ds = st.sidebar.text_area("Input Different-source-pairs Score (log10-LR) Set", "0.4, 0.5, 0.3, 0.6")
+    cal_ds = st.sidebar.text_area("Input Different-source-pairs Score (log10-LR) Set:", "0.4, 0.5, 0.3, 0.6")
     cal_ss = np.array([float(x) for x in cal_ss.split(",")])
     cal_ds = np.array([float(x) for x in cal_ds.split(",")])
 
