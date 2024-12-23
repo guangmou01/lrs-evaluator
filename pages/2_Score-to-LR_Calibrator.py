@@ -294,6 +294,89 @@ def linear_logistic_regression_calibration_test(cal_ss, cal_ds, test_ss, test_ds
     test_ds_lr = 10**(alpha + beta * test_ds)
     return test_ss_lr, test_ds_lr, alpha, beta
 
+def find_best_regularization_degree(cal_ss, cal_ds, degree_min, degree_max, degree_count):
+    """
+    寻找最佳正则化参数 (Degree of Regularization)，并生成交互式图表。
+
+    Parameters:
+    - cal_ss: Same-source calibration set (array-like)
+    - cal_ds: Different-source calibration set (array-like)
+    - degree_min: Minimum Degree of Regularization (float > 1)
+    - degree_max: Maximum Degree of Regularization (float > degree_min)
+    - degree_count: Number of Degrees to test (int > 0)
+
+    Returns:
+    - optimal_degree: Best Degree of Regularization (float)
+    - optimal_cllr: Minimum Cllr achieved (float)
+    - fig: Plotly figure showing Cllr vs Degree of Regularization
+    """
+    # 检查输入范围是否有效
+    if degree_min <= 1 or degree_max <= degree_min or degree_count <= 0:
+        raise ValueError("Ensure degree_min > 1, degree_max > degree_min, and degree_count > 0.")
+
+    # 生成 Degree 和对应的 C 值
+    degree_values = np.linspace(degree_min, degree_max, degree_count)
+    C_values = 1 / degree_values  # Logistic Regression 的 C 值
+
+    # 存储每个 Degree 对应的 Cllr
+    cllr_values = []
+
+    # 遍历 C 值，计算 Cllr
+    for C in C_values:
+        # 校准数据的校准结果
+        cal_ss_cal, cal_ds_cal, _, _ = linear_logistic_regression_calibration_test(
+            cal_ss, cal_ds, cal_ss, cal_ds, c=C)
+
+        # 使用校准后的结果计算 Cllr
+        cllr_values.append(cllr(cal_ss_cal, cal_ds_cal))
+
+    # 找到最优 Degree
+    optimal_index = np.argmin(cllr_values)
+    optimal_degree = degree_values[optimal_index]
+    optimal_cllr = cllr_values[optimal_index]
+
+    # 绘制 Cllr vs Degree 的交互式图表
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=degree_values,
+        y=cllr_values,
+        mode='lines+markers',
+        name='Cllr',
+        marker=dict(size=2),
+        line=dict(width=1)
+    ))
+    fig.add_trace(go.Scatter(
+        x=[optimal_degree],
+        y=[optimal_cllr],
+        mode='markers',
+        name=f'Optimal Degree ({optimal_degree:.4f})',
+        marker=dict(size=8, color='red', symbol='x')
+    ))
+    fig.update_layout(
+        xaxis=dict(title="Degree of Regularization",
+                   showgrid=True,
+                   gridcolor="#d3d3d3",
+                   gridwidth=1,
+                   showline=True,
+                   linecolor="black",
+                   linewidth=2,
+                   mirror=True,
+                   zeroline=False),
+        yaxis=dict(title="Cllr (Calibration Set)",
+                   showgrid=True,
+                   gridcolor="#d3d3d3",
+                   gridwidth=1,
+                   showline=True,
+                   linecolor="black",
+                   linewidth=2,
+                   mirror=True,
+                   zeroline=False),
+        template=None,
+        height=500,
+        width=800,
+        showlegend=False)
+    return optimal_degree, optimal_cllr, fig
+
 # 基于贝叶斯模型的 LR 校准
 def bayes_calibration(score, cal_ss, cal_ds, ns, nd):
     ss_mean = np.mean(cal_ss)
@@ -602,8 +685,51 @@ def main():
 
         elif method == "Logistic Regression Calibration":
             c_input = st.text_input('Input the Degree of Regularization:', value="100")
-            if c_input.isdigit():
-                c_value = 1/int(c_input)
+
+            # 添加 Best Regularization Degree Estimator 的功能
+            with st.expander('⚙️ Best Regularization Degree Estimator'):
+                st.write("Estimate the best degree of regularization by minimizing Cllr.")
+
+                # 用户输入正则化强度范围
+                degree_min = st.number_input('Minimum Degree of Regularization (must be > 1)', value=100.0, step=10.0)
+                degree_max = st.number_input('Maximum Degree of Regularization (must be > Minimum)', value=10000.0,
+                                             step=1000.0)
+                degree_count = st.slider('Number of Values to Try', min_value=10, max_value=1000, value=300)
+
+                # 检查输入范围
+                if degree_min > 1 and degree_max > degree_min:
+                    # 当用户点击按钮时，执行估计过程
+                    if st.button("Estimate Best Degree of Regularization"):
+                        # 调用函数计算最佳正则化参数和图表
+                        try:
+                            optimal_degree, optimal_cllr, fig = find_best_regularization_degree(
+                                cal_ss=cal_ss,
+                                cal_ds=cal_ds,
+                                degree_min=degree_min,
+                                degree_max=degree_max,
+                                degree_count=degree_count
+                            )
+
+                            # 输出结果
+                            st.success(f"Optimal Degree of Regularization: {optimal_degree:.4f}")
+                            st.success(f"Minimum Cllr: {optimal_cllr:.4f}")
+
+                            # 显示图表
+                            st.plotly_chart(fig)
+
+                            # 提供下载功能
+                            degree_values = np.linspace(degree_min, degree_max, degree_count)
+                            data = pd.DataFrame({"Degree of Regularization": degree_values, "Cllr": fig.data[0].y})
+                            st.download_button("💾 Download Results as CSV", data.to_csv(index=False),
+                                               "Cllr_vs_Degree.csv", "text/csv")
+
+                        except Exception as e:
+                            st.error(f"Error in estimation: {str(e)}")
+                else:
+                    st.error("Please ensure Minimum Degree > 1 and Maximum Degree > Minimum Degree.")
+
+            try:
+                c_value = 1 / float(c_input)  # 将输入转换为浮点数并计算 C 值
                 if c_value > 0:
                     lr, alpha, beta = linear_logistic_regression_calibration(score, cal_ss, cal_ds, c=c_value)
                     calibration_stats = pd.DataFrame({
@@ -611,9 +737,9 @@ def main():
                         "Value": [alpha, beta]})
                     graphic_re = linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds, c=c_value)
                 else:
-                    st.error("The degree of regularization should be a positive number.")
-            else:
-                st.warning("Please input a valid number for the degree of regularization (>1).")
+                    st.error("The degree of regularization should be greater than 1.")
+            except ValueError:
+                st.error("Please input a valid number for the degree of regularization.")
 
         elif method == "Bayes Model Calibration":
             ns_input = st.text_input('Input the Number of Individuals in SS-Calibration Set:', value="5")
@@ -636,6 +762,7 @@ def main():
         # 显示校准后的 LR
         st.write(f"🧮 Non-calibrated Score (Evidence Score): {score}")
         st.write(f"🧮 Calibrated Likelihood Ratio (Evidence LR): {lr}")
+        st.write(f"🧮 Calibrated Likelihood Ratio (Evidence log10-LR): {np.log10(lr)}")
 
         # 显示和下载 Calibration Stats
         display_and_download_stats("📊 Calibration Statistics", calibration_stats, "calibration_stats.csv")
@@ -674,8 +801,51 @@ def main():
 
         elif method == "Logistic Regression Calibration":
             c_input = st.text_input('Input the Degree of Regularization:', value="100")
-            if c_input.isdigit():
-                c_value = 1/int(c_input)
+
+            # 添加 Best Regularization Degree Estimator 的功能
+            with st.expander('⚙️ Best Regularization Degree Estimator'):
+                st.write("Estimate the best degree of regularization by minimizing Cllr.")
+
+                # 用户输入正则化强度范围
+                degree_min = st.number_input('Minimum Degree of Regularization (must be > 1)', value=100.0, step=10.0)
+                degree_max = st.number_input('Maximum Degree of Regularization (must be > Minimum)', value=10000.0,
+                                             step=1000.0)
+                degree_count = st.slider('Number of Values to Try', min_value=10, max_value=1000, value=300)
+
+                # 检查输入范围
+                if degree_min > 1 and degree_max > degree_min:
+                    # 当用户点击按钮时，执行估计过程
+                    if st.button("Estimate Best Degree of Regularization"):
+                        # 调用函数计算最佳正则化参数和图表
+                        try:
+                            optimal_degree, optimal_cllr, fig = find_best_regularization_degree(
+                                cal_ss=cal_ss,
+                                cal_ds=cal_ds,
+                                degree_min=degree_min,
+                                degree_max=degree_max,
+                                degree_count=degree_count
+                            )
+
+                            # 输出结果
+                            st.success(f"Optimal Degree of Regularization: {optimal_degree:.4f}")
+                            st.success(f"Minimum Cllr: {optimal_cllr:.4f}")
+
+                            # 显示图表
+                            st.plotly_chart(fig)
+
+                            # 提供下载功能
+                            degree_values = np.linspace(degree_min, degree_max, degree_count)
+                            data = pd.DataFrame({"Degree of Regularization": degree_values, "Cllr": fig.data[0].y})
+                            st.download_button("💾 Download Results as CSV", data.to_csv(index=False),
+                                               "Cllr_vs_Degree.csv", "text/csv")
+
+                        except Exception as e:
+                            st.error(f"Error in estimation: {str(e)}")
+                else:
+                    st.error("Please ensure Minimum Degree > 1 and Maximum Degree > Minimum Degree.")
+
+            try:
+                c_value = 1 / float(c_input)  # 将输入转换为浮点数并计算 C 值
                 if c_value > 0:
                     test_ss_lr, test_ds_lr, alpha, beta = linear_logistic_regression_calibration_test(
                         cal_ss, cal_ds, test_ss, test_ds,
@@ -685,7 +855,7 @@ def main():
                         "Value": [alpha, beta]})
                 else:
                     st.error("The degree of regularization should be a positive number.")
-            else:
+            except ValueError:
                 st.warning("Please input a valid number for the degree of regularization (>1).")
 
         elif method == "Bayes Model Calibration":
