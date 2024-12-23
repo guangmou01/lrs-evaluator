@@ -688,7 +688,6 @@ def main():
 
             # 添加 Best Regularization Degree Estimator 的功能
             with st.expander('⚙️ Best Regularization Degree Estimator'):
-                st.write("Estimate the best degree of regularization by minimizing Cllr.")
 
                 # 用户输入正则化强度范围
                 degree_min = st.number_input('Minimum Degree of Regularization (must be > 1)', value=100.0, step=10.0)
@@ -804,7 +803,6 @@ def main():
 
             # 添加 Best Regularization Degree Estimator 的功能
             with st.expander('⚙️ Best Regularization Degree Estimator'):
-                st.write("Estimate the best degree of regularization by minimizing Cllr.")
 
                 # 用户输入正则化强度范围
                 degree_min = st.number_input('Minimum Degree of Regularization (must be > 1)', value=100.0, step=10.0)
