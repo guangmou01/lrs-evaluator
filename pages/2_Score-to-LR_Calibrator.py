@@ -44,7 +44,8 @@ def raw_gaussian_calibration_plot(score, cal_ss, cal_ds):
                    showline=True,
                    linecolor="black",
                    linewidth=2,
-                   mirror=True),
+                   mirror=True,
+                   title_standoff=10),
         yaxis=dict(showgrid=True,
                    gridcolor="#d3d3d3",
                    gridwidth=1,
@@ -136,7 +137,8 @@ def equal_variance_gaussian_calibration_plot(score, cal_ss, cal_ds):
                    showline=True,
                    linecolor="black",
                    linewidth=2,
-                   mirror=True),
+                   mirror=True,
+                   title_standoff=10),
         yaxis=dict(showgrid=True,
                    gridcolor="#d3d3d3",
                    gridwidth=1,
@@ -272,7 +274,7 @@ def linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds,
         yaxis=dict(showline=True, linewidth=2, linecolor='black', mirror=True, ticks="outside"),
         xaxis2=dict(title="Non-calibrated Score", showline=True, linewidth=2, linecolor='black', mirror=True,
                     ticks="outside",
-                    range=[min(x_range), max(x_range)]),
+                    range=[min(x_range), max(x_range)], title_standoff=10),
         yaxis1=dict(title="Probability", showline=True, linewidth=2, linecolor='black', mirror=True, ticks="outside"),
         yaxis2=dict(title="Calibrated log-LR", showline=True, linewidth=2, linecolor='black', mirror=True,
                     ticks="outside", range=[alpha + beta * min(x_range), alpha + beta * max(x_range)]),
@@ -294,7 +296,7 @@ def linear_logistic_regression_calibration_test(cal_ss, cal_ds, test_ss, test_ds
     test_ds_lr = 10**(alpha + beta * test_ds)
     return test_ss_lr, test_ds_lr, alpha, beta
 
-def find_best_regularization_degree(cal_ss, cal_ds, degree_min, degree_max, degree_count):
+def find_best_regularization_degree(cal_ss, cal_ds, test_ss, test_ds, degree_min, degree_max, degree_count):
     """
     寻找最佳正则化参数 (Degree of Regularization)，并生成交互式图表。
 
@@ -319,32 +321,50 @@ def find_best_regularization_degree(cal_ss, cal_ds, degree_min, degree_max, degr
     C_values = 1 / degree_values  # Logistic Regression 的 C 值
 
     # 存储每个 Degree 对应的 Cllr
-    cllr_values = []
+    cllr_cal_values = []  # Calibration set Cllr
+    cllr_test_values = []  # Test set Cllr
 
     # 遍历 C 值，计算 Cllr
     for C in C_values:
-        # 校准数据的校准结果
+        # 计算校准集的校准结果
         cal_ss_cal, cal_ds_cal, _, _ = linear_logistic_regression_calibration_test(
             cal_ss, cal_ds, cal_ss, cal_ds, c=C)
-
+        # 计算测试集的校准结果
+        test_ss_cal, test_ds_cal, _, _ = linear_logistic_regression_calibration_test(
+            cal_ss, cal_ds, test_ss, test_ds, c=C)
         # 使用校准后的结果计算 Cllr
-        cllr_values.append(cllr(cal_ss_cal, cal_ds_cal))
+        cllr_cal_values.append(cllr(cal_ss_cal, cal_ds_cal))
+        cllr_test_values.append(cllr(test_ss_cal, test_ds_cal))
 
-    # 找到最优 Degree
-    optimal_index = np.argmin(cllr_values)
+    # 找到最优 Degree（基于校准集的 Cllr）
+    optimal_index = np.argmin(cllr_cal_values)
     optimal_degree = degree_values[optimal_index]
-    optimal_cllr = cllr_values[optimal_index]
+    optimal_cllr = cllr_cal_values[optimal_index]
 
     # 绘制 Cllr vs Degree 的交互式图表
     fig = go.Figure()
+
+    # 添加校准集曲线
     fig.add_trace(go.Scatter(
         x=degree_values,
-        y=cllr_values,
+        y=cllr_cal_values,
         mode='lines+markers',
-        name='Cllr',
+        name='Calibration Set',
         marker=dict(size=2),
-        line=dict(width=1)
+        line=dict(width=1, color='blue')
     ))
+
+    # 添加测试集曲线
+    fig.add_trace(go.Scatter(
+        x=degree_values,
+        y=cllr_test_values,
+        mode='lines+markers',
+        name='Test Set',
+        marker=dict(size=2),
+        line=dict(width=1, color='green')
+    ))
+
+    # 添加最优 Degree 的标记
     fig.add_trace(go.Scatter(
         x=[optimal_degree],
         y=[optimal_cllr],
@@ -352,6 +372,8 @@ def find_best_regularization_degree(cal_ss, cal_ds, degree_min, degree_max, degr
         name=f'Optimal Degree ({optimal_degree:.4f})',
         marker=dict(size=8, color='red', symbol='x')
     ))
+
+    # 更新图表布局
     fig.update_layout(
         xaxis=dict(title="Degree of Regularization",
                    showgrid=True,
@@ -361,8 +383,9 @@ def find_best_regularization_degree(cal_ss, cal_ds, degree_min, degree_max, degr
                    linecolor="black",
                    linewidth=2,
                    mirror=True,
-                   zeroline=False),
-        yaxis=dict(title="Cllr (Calibration Set)",
+                   zeroline=False,
+                   title_standoff=10),
+        yaxis=dict(title="Cllr",
                    showgrid=True,
                    gridcolor="#d3d3d3",
                    gridwidth=1,
@@ -375,6 +398,7 @@ def find_best_regularization_degree(cal_ss, cal_ds, degree_min, degree_max, degr
         height=500,
         width=800,
         showlegend=False)
+
     return optimal_degree, optimal_cllr, fig
 
 # 基于贝叶斯模型的 LR 校准
@@ -410,7 +434,8 @@ def bayes_calibration_plot(score, cal_ss, cal_ds, ns, nd):
                    showline=True,
                    linecolor="black",
                    linewidth=2,
-                   mirror=True),
+                   mirror=True,
+                   title_standoff=10),
         yaxis=dict(showgrid=True,
                    gridcolor="#d3d3d3",
                    gridwidth=1,
@@ -696,14 +721,16 @@ def main():
                 degree_count = st.slider('Number of Values to Try', min_value=10, max_value=1000, value=300)
 
                 # 检查输入范围
-                if degree_min > 1 and degree_max > degree_min:
+                if (degree_min > 1) and (degree_max > degree_min):
                     # 当用户点击按钮时，执行估计过程
-                    if st.button("Estimate Best Degree of Regularization"):
+                    if st.button("🔍 Estimate Best Degree of Regularization"):
                         # 调用函数计算最佳正则化参数和图表
                         try:
                             optimal_degree, optimal_cllr, fig = find_best_regularization_degree(
                                 cal_ss=cal_ss,
                                 cal_ds=cal_ds,
+                                test_ss=test_ss,
+                                test_ds=test_ds,
                                 degree_min=degree_min,
                                 degree_max=degree_max,
                                 degree_count=degree_count
@@ -811,14 +838,16 @@ def main():
                 degree_count = st.slider('Number of Values to Try', min_value=10, max_value=1000, value=300)
 
                 # 检查输入范围
-                if degree_min > 1 and degree_max > degree_min:
+                if (degree_min > 1) and (degree_max > degree_min):
                     # 当用户点击按钮时，执行估计过程
-                    if st.button("Estimate Best Degree of Regularization"):
+                    if st.button("🔍 Estimate Best Degree of Regularization"):
                         # 调用函数计算最佳正则化参数和图表
                         try:
                             optimal_degree, optimal_cllr, fig = find_best_regularization_degree(
                                 cal_ss=cal_ss,
                                 cal_ds=cal_ds,
+                                test_ss=test_ss,
+                                test_ds=test_ds,
                                 degree_min=degree_min,
                                 degree_max=degree_max,
                                 degree_count=degree_count
