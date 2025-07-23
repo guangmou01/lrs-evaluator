@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from scipy.stats import t
+from scipy.stats import t, skew, norm, kurtosis, skewnorm
 from math import sqrt, pi, exp
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -210,7 +210,8 @@ def linear_logistic_regression_calibration(score, cal_ss, cal_ds,
                                            solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3, c=0.0001):
     scores = np.concatenate((cal_ss, cal_ds)).reshape(-1, 1)
     labels = np.array([1] * len(cal_ss) + [0] * len(cal_ds))
-    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c)
+    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c,
+                               class_weight='balanced')
     model.fit(scores, labels)
     alpha = model.intercept_[0]
     beta = model.coef_[0][0]
@@ -224,7 +225,8 @@ def linear_logistic_regression_calibration_plot(score, cal_ss, cal_ds,
     labels = np.array([1] * len(cal_ss) + [0] * len(cal_ds))
 
     # Train the logistic regression model
-    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c)
+    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c,
+                               class_weight='balanced')
     model.fit(scores, labels)
 
     # Extract the coefficients
@@ -288,7 +290,8 @@ def linear_logistic_regression_calibration_test(cal_ss, cal_ds, test_ss, test_ds
                                                 solver='liblinear', penalty="l2", max_iter=5000, tol=1e-3, c=0.0001):
     scores = np.concatenate((cal_ss, cal_ds)).reshape(-1, 1)
     labels = np.array([1] * len(cal_ss) + [0] * len(cal_ds))
-    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c)
+    model = LogisticRegression(solver=solver, max_iter=max_iter, penalty=penalty, tol=tol, C=c,
+                               class_weight='balanced')
     model.fit(scores, labels)
     alpha = model.intercept_[0]
     beta = model.coef_[0][0]
